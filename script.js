@@ -20,8 +20,8 @@ let jump = false;
 
 // перемещение блока
 const updatePositions = () => {
-    heroImg.style.left = `-${rightPosition * 288}px`;
-    heroImg.style.top = '-586px';
+    heroImg.style.left = `-${rightPosition * 96}px`;
+    heroImg.style.top = '-192px';
     imgBlock.style.left = `${imgBlockPosition * 20}px`;
 };
 
@@ -71,8 +71,8 @@ const hitHandler = () => {
         default: break;
     }
     rightPosition += 1;
-    heroImg.style.left = `-${rightPosition * 288}px`;
-    heroImg.style.top = '-864px';
+    heroImg.style.left = `-${rightPosition * 96}px`;
+    heroImg.style.top = '-288px';
 };
 const jumpHandler = () => {
     switch (direction) {
@@ -95,8 +95,8 @@ const jumpHandler = () => {
         default: break;
     }
     rightPosition += 1;
-    heroImg.style.left = `-${rightPosition * 288}px`;
-    heroImg.style.top = '-288px';
+    heroImg.style.left = `-${rightPosition * 96}px`;
+    heroImg.style.top = '-96px';
 };
 
 const standHandler = () => {
@@ -118,17 +118,17 @@ const standHandler = () => {
         default: break;
     }
     rightPosition += 1;
-    heroImg.style.left = `-${rightPosition * 288}px`;
+    heroImg.style.left = `-${rightPosition * 96}px`;
     heroImg.style.top = '0px';
 };
 
 // Полный экран
 fsBtn.onclick = () => {
     if (document.fullscreen) {
-        fsBtn.src = 'screen/fullscreen.png';
+        fsBtn.src = 'images/screen/fullscreen.png';
         document.exitFullscreen();
     } else {
-        fsBtn.src = 'screen/cancel.png';
+        fsBtn.src = 'images/screen/cancel.png';
         canvas.requestFullscreen();
     }
 };
