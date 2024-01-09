@@ -13,6 +13,8 @@ let canvas = document.querySelector("#canvas");
 let fsBtn = document.querySelector("#fsBtn");
 
 let direction = 'right';
+let hit = false;
+let jump = false;
 
 // Function
 
@@ -29,7 +31,7 @@ const rightHandler = () => {
     rightPosition += 1;
     imgBlockPosition += 1;
     if (rightPosition > 5) {
-        rightPosition = 0;
+        rightPosition = -1;
     }
     updatePositions();
 };
@@ -40,12 +42,61 @@ const leftHandler = () => {
     rightPosition += 1;
     imgBlockPosition -= 1;
     if (rightPosition > 5) {
-        rightPosition = 0;
+        rightPosition = -1;
     }
     if (imgBlockPosition < 0) {
         imgBlockPosition = 0;
     }
     updatePositions();
+};
+
+const hitHandler = () => {
+    switch (direction) {
+        case "right": {
+            heroImg.style.transform = 'scale(-1,1)';
+            if (rightPosition > 4) {
+                rightPosition = 0;
+                hit=false;
+            }
+            break;
+        }
+        case "left": {
+            heroImg.style.transform = 'scale(1,1)';
+            if (rightPosition > 3) {
+                rightPosition = -1;
+                hit=false;
+            }
+            break;
+        }
+        default: break;
+    }
+    rightPosition += 1;
+    heroImg.style.left = `-${rightPosition * 288}px`;
+    heroImg.style.top = '-864px';
+};
+const jumpHandler = () => {
+    switch (direction) {
+        case "right": {
+            heroImg.style.transform = 'scale(-1,1)';
+            if (rightPosition > 4) {
+                rightPosition = 0;
+                jump=false;
+            }
+            break;
+        }
+        case "left": {
+            heroImg.style.transform = 'scale(1,1)';
+            if (rightPosition > 3) {
+                rightPosition = -1;
+                jump=false;
+            }
+            break;
+        }
+        default: break;
+    }
+    rightPosition += 1;
+    heroImg.style.left = `-${rightPosition * 288}px`;
+    heroImg.style.top = '-288px';
 };
 
 const standHandler = () => {
@@ -87,9 +138,16 @@ let animationFrameId = null;
 const lifeCycle = (timestamp) => {
     const currentTime = new Date().getTime();
     if (currentTime - lastTime > delay) {
-        standHandler();
+        if (hit) {
+            hitHandler();
+        } else if (jump) {
+            jumpHandler();
+        } else {
+            standHandler();
+        }
         lastTime = currentTime;
     }
+
 
     if (!isMoving) {
         animationFrameId = requestAnimationFrame(lifeCycle);
@@ -111,6 +169,12 @@ window.addEventListener('keydown', (event) => {
                 } else if (event.code === 'KeyA') {
                     direction = 'left';
                     leftHandler();
+                } else if (event.code === 'KeyW') {
+                    jump = true;
+                    console.log(jump);
+                }else if (event.code === 'KeyE') {
+                    hit = true;
+                    console.log(hit);
                 }
                 lastTime = currentTime;
             }
@@ -130,4 +194,9 @@ window.addEventListener('keyup', () => {
 });
 
 // Начать анимацию
-lifeCycle();
+const start = () => {
+    lifeCycle();
+}
+
+start();
+
