@@ -251,6 +251,7 @@ class Enemy {
     delay;
     dir;
     delayMove;
+    stop;
 
     sourcePath;
     constructor(x,y) {
@@ -259,13 +260,14 @@ class Enemy {
         this.posY=y;
         this.blockSize=96;
         this.spritePos=0;
-        this.spriteMaxPos=4;
+        this.spriteMaxPos=5;
         this.lastTime = 0;
         this.lastMoveTime =0;
         this.delay=100;
         this.sourcePath = 'images/enemies/';
-        this.dir = 0.5;
+        this.dir = 1;
         this.delayMove = 110;
+        this.stop = false;
 
         this.state = this.IDLE;
         this.animateWasChanged = false;
@@ -340,7 +342,12 @@ class Enemy {
             //     this.move();
             //     this.lastMoveTime = currentTime;
             // }
-            this.move();
+            this.checkCollide();
+            if(!this.stop){
+                this.move();
+            }else {
+                this.changeAnimate(this.ATTACK)
+            }
             this.lastTime = currentTime;
         }
 
@@ -348,7 +355,7 @@ class Enemy {
     }
     setAttack(){
         // this.img.style.left = `-${rightPosition * 96}px`;
-        // this.img.style.top = `-300px`;
+        this.img.style.top = `-300px`;
     }
     setDeath(){
         this.img.style.left = `-${rightPosition * 96}px`;
@@ -360,7 +367,6 @@ class Enemy {
         this.img.style.left = `-${rightPosition * 96}px`;
     }
     setWalk(){
-        this.spriteMaxPos=4;
         this.img.style.top = `0px`;
     }
 
@@ -378,6 +384,23 @@ class Enemy {
         }
         this.posX +=this.dir;
         this.block.style.left = `${this.posX * 32}px`;
+    }
+    checkCollide(){
+        if(heroY===this.posY) {
+            if(heroX === this.posX){
+                this.stop=true;
+                // left
+            } else if(heroX === (this.posX+2)){
+                this.stop=true;
+                //right
+            }else {
+                this.stop = false;
+                this.changeAnimate(this.WALK);
+            }
+        } else {
+            this.stop=false;
+            this.changeAnimate(this.WALK);
+        }
     }
 }
 
