@@ -5,6 +5,7 @@ let rightPosition = 0;
 let imgBlockPosition = 0;
 
 let isMoving = false;
+let animationFrameId = null;
 
 let lastTime = 0;
 const delay = 70; // Задержка в миллисекундах
@@ -15,14 +16,47 @@ let fsBtn = document.querySelector("#fsBtn");
 let direction = 'right';
 let hit = false;
 let jump = false;
+let fall = false;
+
+let heroX = Math.round((Number.parseInt(imgBlock.style.left)+32)/32);
+let heroY = Math.round(Number.parseInt(imgBlock.style.bottom)/32);
+let info = document.querySelector('#info');
+
+let tileArray = [];
 
 // Function
+const updateHeroXY=()=>{
+    heroX = Math.round((Number.parseInt(imgBlock.style.left)+32)/32);
+    heroY = Math.round(Number.parseInt(imgBlock.style.bottom)/32);
+    info.innerText= `heroX= ${heroX};heroY= ${heroY}`;
+}
 
+const checkFalling = () => {
+    updateHeroXY();
+    let isFalling = tileArray.filter(tile => tile[0] === heroX && tile[1] + 1 === heroY).length === 0;
+
+    if(isFalling){
+        info.innerText+='falling';
+        fall = true;
+    } else {
+        info.innerText+='not falling';
+        fall = false;
+    }
+}
+
+const fallHandler = () => {
+    imgBlock.style.bottom = `${parseInt(imgBlock.style.bottom)-40}px`;
+    checkFalling();
+    // fall=false;
+}
 // перемещение блока
 const updatePositions = () => {
+
     heroImg.style.left = `-${rightPosition * 96}px`;
     heroImg.style.top = '-192px';
     imgBlock.style.left = `${imgBlockPosition * 20}px`;
+
+    checkFalling();
 };
 
 // на право
@@ -81,6 +115,9 @@ const jumpHandler = () => {
             if (rightPosition > 4) {
                 rightPosition = 0;
                 jump=false;
+                imgBlock.style.bottom = `${parseInt(imgBlock.style.bottom)+160}px`;
+                imgBlockPosition += 10;
+                imgBlock.style.left = `${imgBlockPosition * 20}px`;
             }
             break;
         }
@@ -88,7 +125,10 @@ const jumpHandler = () => {
             heroImg.style.transform = 'scale(1,1)';
             if (rightPosition > 3) {
                 rightPosition = -1;
-                jump=false;
+                jump=false
+                imgBlock.style.bottom = `${parseInt(imgBlock.style.bottom)+160}px`;
+                imgBlockPosition -= 10;
+                imgBlock.style.left = `${imgBlockPosition * 20}px`;
             }
             break;
         }
@@ -120,9 +160,10 @@ const standHandler = () => {
     rightPosition += 1;
     heroImg.style.left = `-${rightPosition * 96}px`;
     heroImg.style.top = '0px';
+    checkFalling();
 };
 
-// Полный экран
+// Полный экран----------------------------
 fsBtn.onclick = () => {
     if (document.fullscreen) {
         fsBtn.src = 'images/screen/fullscreen.png';
@@ -133,16 +174,19 @@ fsBtn.onclick = () => {
     }
 };
 
-let animationFrameId = null;
 
 const lifeCycle = (timestamp) => {
+
     const currentTime = new Date().getTime();
     if (currentTime - lastTime > delay) {
         if (hit) {
             hitHandler();
         } else if (jump) {
             jumpHandler();
-        } else {
+        } else if (fall){
+
+            fallHandler();
+        }else {
             standHandler();
         }
         lastTime = currentTime;
@@ -153,8 +197,38 @@ const lifeCycle = (timestamp) => {
         animationFrameId = requestAnimationFrame(lifeCycle);
     }
 };
+//------------------------------------------------------------------
+// ДОРОГА
+const createTiles = (x,y=1) => {
+    let tile = document.createElement('img');
+    let tileBlack = document.createElement('img');
+    tile.src = 'images/tiles/Tile1.png';
+    tile.style.position = 'absolute';
+    tile.style.left = `${x*32}px`;
+    tile.style.bottom = `${y*32}px`;
+    canvas.appendChild(tile);
 
-// Handlers
+    tileArray.push([x,y]);
+}
+
+const createTilesPlatform= (startX, startY, length) =>{
+    for (let i=0; i<length;i++){
+        createTiles(startX+i,startY)
+    }
+}
+const  addTiles = (i) =>{
+    createTiles(i);
+
+    let tileBlack = document.createElement('img');
+    tileBlack.src = 'images/tiles/Tile4.png';
+    tileBlack.style.position = 'absolute';
+    tileBlack.style.left = `${i*32}px`;
+    tileBlack.style.bottom = '0px';
+    canvas.appendChild(tileBlack);
+
+}
+
+// Handlers -------------------------------------------------------------------------------
 
 window.addEventListener('keydown', (event) => {
     if (!event.repeat && !isMoving) {
@@ -195,6 +269,14 @@ window.addEventListener('keyup', () => {
 
 // Начать анимацию
 const start = () => {
+    for (let i=0; i<50;i++) {
+        if (i>10 && i<15){
+            continue;
+        }
+        addTiles(i);
+    }
+
+    createTilesPlatform(11,5,5);
     lifeCycle();
 }
 
