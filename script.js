@@ -8,7 +8,7 @@ let isMoving = false;
 let animationFrameId = null;
 
 let lastTime = 0;
-const delay = 70; // Задержка в миллисекундах
+const delay = 100; // Задержка в миллисекундах
 
 let canvas = document.querySelector("#canvas");
 let fsBtn = document.querySelector("#fsBtn");
@@ -89,7 +89,7 @@ const hitHandler = () => {
         case "right": {
             heroImg.style.transform = 'scale(-1,1)';
             if (rightPosition > 4) {
-                rightPosition = 0;
+                rightPosition = 1;
                 hit=false;
             }
             break;
@@ -97,7 +97,7 @@ const hitHandler = () => {
         case "left": {
             heroImg.style.transform = 'scale(1,1)';
             if (rightPosition > 3) {
-                rightPosition = -1;
+                rightPosition = 0;
                 hit=false;
             }
             break;
@@ -113,7 +113,7 @@ const jumpHandler = () => {
         case "right": {
             heroImg.style.transform = 'scale(-1,1)';
             if (rightPosition > 4) {
-                rightPosition = 0;
+                rightPosition = 1;
                 jump=false;
                 imgBlock.style.bottom = `${parseInt(imgBlock.style.bottom)+160}px`;
                 imgBlockPosition += 10;
@@ -124,7 +124,7 @@ const jumpHandler = () => {
         case "left": {
             heroImg.style.transform = 'scale(1,1)';
             if (rightPosition > 3) {
-                rightPosition = -1;
+                rightPosition = 0;
                 jump=false
                 imgBlock.style.bottom = `${parseInt(imgBlock.style.bottom)+160}px`;
                 imgBlockPosition -= 10;
@@ -144,14 +144,14 @@ const standHandler = () => {
         case "right": {
             heroImg.style.transform = 'scale(-1,1)';
             if (rightPosition > 4) {
-                rightPosition = 0;
+                rightPosition = 1;
             }
             break;
         }
         case "left": {
             heroImg.style.transform = 'scale(1,1)';
             if (rightPosition > 3) {
-                rightPosition = -1;
+                rightPosition = 0;
             }
             break;
         }
@@ -201,7 +201,6 @@ const lifeCycle = (timestamp) => {
 // ДОРОГА
 const createTiles = (x,y=1) => {
     let tile = document.createElement('img');
-    let tileBlack = document.createElement('img');
     tile.src = 'images/tiles/Tile1.png';
     tile.style.position = 'absolute';
     tile.style.left = `${x*32}px`;
@@ -226,6 +225,160 @@ const  addTiles = (i) =>{
     tileBlack.style.bottom = '0px';
     canvas.appendChild(tileBlack);
 
+}
+
+//ВРАГИ------------------------------------------------------------------------------------
+class Enemy {
+    ATTACK = 'attack';
+    DEATH = 'death';
+    HURT= 'hurt';
+    IDLE = 'idle';
+    WALK = 'walk';
+
+    state;
+    animateWasChanged;
+
+    startX;
+    posX;
+    posY;
+    img;
+    block;
+    blockSize;
+    spritePos;
+    spriteMaxPos;
+    lastTime;
+    lastMoveTime;
+    delay;
+    dir;
+    delayMove;
+
+    sourcePath;
+    constructor(x,y) {
+        this.posX=x;
+        this.startX= this.posX;
+        this.posY=y;
+        this.blockSize=96;
+        this.spritePos=0;
+        this.spriteMaxPos=4;
+        this.lastTime = 0;
+        this.lastMoveTime =0;
+        this.delay=100;
+        this.sourcePath = 'images/enemies/';
+        this.dir = 0.5;
+        this.delayMove = 110;
+
+        this.state = this.IDLE;
+        this.animateWasChanged = false;
+
+        this.createImg();
+        this.changeAnimate(this.WALK);
+        this.lifeCycle();
+    }
+    createImg() {
+        this.block = document.createElement('div');
+        this.block.style.position = 'absolute';
+        this.block.style.overflow = 'hidden';
+        this.block.style.left = `${this.posX*32}px`;
+        this.block.style.bottom = `${this.posY*32}px`;
+        this.block.style.width = `${this.blockSize}px`;
+        this.block.style.height = `${this.blockSize-10}px`;
+        canvas.appendChild(this.block);
+
+        this.img = document.createElement('img');
+        this.img.src = this.sourcePath+'alian2.png';
+        this.img.style.position = 'absolute';
+        this.img.style.top = `${0}px`;
+        this.img.style.bottom = `${0}px`;
+        this.img.style.width = `${this.blockSize*6}px`;
+        this.img.style.height = `${this.blockSize*4}px`;
+        this.block.appendChild(this.img);
+    }
+    lifeCycle(){
+        this.animate();
+    }
+    animate(){
+        const currentTime = new Date().getTime();
+        if (currentTime - this.lastTime > this.delay){
+
+            if(this.animateWasChanged){
+                this.animateWasChanged=false;
+                switch (this.state){
+                    case this.ATTACK:{
+                        this.setAttack();
+                        break;
+                    }
+                    case this.DEATH:{
+                        // this.img.style.width = `${this.blockSize * 6}px`;
+                        this.setDeath()
+                        break;
+                    }
+                    // case this.HURT:{
+                    //     this.img.style.width = `${this.blockSize * 2}px`;
+                    //     this.setHurt();
+                    //     break;
+                    // }
+                    // case this.IDLE:{
+                    //     this.setIdle();
+                    //     break;
+                    // }
+                    case this.WALK:{
+                        this.setWalk();
+                        break;
+                    }
+                    default: break;
+                }
+            }
+
+            this.spritePos++;
+            if(this.spritePos>this.spriteMaxPos){
+                this.spritePos=0;
+            }
+            this.img.style.left = `${-(this.spritePos*this.blockSize)}px`;
+
+            // if (currentTime - this.lastMoveTime > this.delayMove) {
+            //     console.log()
+            //     this.move();
+            //     this.lastMoveTime = currentTime;
+            // }
+            this.move();
+            this.lastTime = currentTime;
+        }
+
+        requestAnimationFrame(()=> this.animate());
+    }
+    setAttack(){
+        // this.img.style.left = `-${rightPosition * 96}px`;
+        // this.img.style.top = `-300px`;
+    }
+    setDeath(){
+        this.img.style.left = `-${rightPosition * 96}px`;
+    }
+    setHurt(){
+        this.img.style.left = `-${rightPosition * 96}px`;
+    }
+    setIdle(){
+        this.img.style.left = `-${rightPosition * 96}px`;
+    }
+    setWalk(){
+        this.spriteMaxPos=4;
+        this.img.style.top = `0px`;
+    }
+
+    changeAnimate(stateStr){
+        this.state = stateStr;
+        this.animateWasChanged = true;
+    }
+    move(){
+        if(this.posX>(this.startX+15)){
+            this.dir *=-1;
+            this.img.style.transform = "scale(1,1)";
+        } else if(this.posX<=this.startX){
+            this.dir= Math.abs(this.dir);
+            this.img.style.transform = "scale(-1,1)";
+        }
+        this.posX +=this.dir;
+        this.block.style.left = `${this.posX * 32}px`;
+    }
 }
 
 // Handlers -------------------------------------------------------------------------------
@@ -275,8 +428,10 @@ const start = () => {
         }
         addTiles(i);
     }
-
     createTilesPlatform(11,5,5);
+
+    let enemy = new Enemy(20,2);
+
     lifeCycle();
 }
 
