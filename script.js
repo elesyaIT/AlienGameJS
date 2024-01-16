@@ -11,6 +11,7 @@ let lastTime = 0;
 const delay = 100; // Задержка в миллисекундах
 
 let canvas = document.querySelector("#canvas");
+let backgroundCanvas = window.document.querySelector('#background-canvas');
 let fsBtn = document.querySelector("#fsBtn");
 
 let direction = 'right';
@@ -34,6 +35,13 @@ let isRightSideBlocked = false;
 let isLeftSideBlocked = false;
 let wasHeroHit = false;
 
+let f1WallArray = [[-10,0],[15, 32], [42, 52], [64, 75], [92, 104],[119,129]];
+let f2WallArray = [[54, 64]];
+let isWallRight = false;
+let isWallLeft = false;
+
+let heroStep = 3;
+
 // Function
 
 const moveWorldLeft = () => {
@@ -44,14 +52,14 @@ const moveWorldLeft = () => {
         elem[0] = elem[0] - 1;
     });
     enemiesArray.map(elem => elem.moveLeft());
-    // f1WallArray.map(elem => {
-    //     elem[0] -= 1;
-    //     elem[1] -= 1;
-    // });
-    // f2WallArray.map(elem => {
-    //     elem[0] -= 1;
-    //     elem[1] -= 1;
-    // });
+    f1WallArray.map(elem => {
+        elem[0] -= 1;
+        elem[1] -= 1;
+    });
+    f2WallArray.map(elem => {
+        elem[0] -= 1;
+        elem[1] -= 1;
+    });
 }
 const moveWorldRight = () => {
     objectsArray.map((elem, index)=>{
@@ -61,14 +69,14 @@ const moveWorldRight = () => {
         elem[0] = elem[0] + 1;
     });
     enemiesArray.map(elem => elem.moveRight());
-    // f1WallArray.map(elem => {
-    //     elem[0] += 1;
-    //     elem[1] += 1;
-    // });
-    // f2WallArray.map(elem => {
-    //     elem[0] += 1;
-    //     elem[1] += 1;
-    // });
+    f1WallArray.map(elem => {
+        elem[0] += 1;
+        elem[1] += 1;
+    });
+    f2WallArray.map(elem => {
+        elem[0] += 1;
+        elem[1] += 1;
+    });
 }
 const updateHeroXY=()=>{
     heroX = Math.round((Number.parseInt(imgBlock.style.left)+32)/32);
@@ -99,15 +107,50 @@ const updatePositions = () => {
 
     heroImg.style.left = `-${rightPosition * 96}px`;
     heroImg.style.top = '-192px';
-    imgBlock.style.left = `${imgBlockPosition * 20}px`;
+    imgBlock.style.left = `${imgBlockPosition * heroStep}px`;
 
     checkFalling();
     wasHeroHit=false;
 };
 
+const checkRightWallCollide = () => {
+    isWallLeft = false;
+    isWallRight = false;
+    if(heroY === 1){
+        f1WallArray.map(elem => {
+            if(heroX === elem[0] - 2){
+                isWallRight = true;
+            }
+        })
+    }else if(heroY === 5){
+        f2WallArray.map(elem => {
+            if(heroX === elem[0] - 2){
+                isWallRight = true;
+            }
+        })
+    }
+}
+const checkLeftWallCollide = () => {
+    isWallLeft = false;
+    isWallRight = false;
+    if(heroY === 1){
+        f1WallArray.map(elem => {
+            if(heroX === elem[1]){
+                isWallLeft = true;
+            }
+        })
+    }else if(heroY === 5){
+        f2WallArray.map(elem => {
+            if(heroX === elem[1]){
+                isWallLeft = true;
+            }
+        })
+    }
+}
+
 // на право
 const rightHandler = () => {
-    if(!isRightSideBlocked){
+    if(!isRightSideBlocked && !isWallRight){
         heroImg.style.transform = 'scale(-1,1)';
         rightPosition += 1;
         imgBlockPosition += 1;
@@ -116,12 +159,13 @@ const rightHandler = () => {
         }
         updatePositions();
         moveWorldLeft();
+        checkRightWallCollide();
     }
 };
 
 // на лево
 const leftHandler = () => {
-    if(!isLeftSideBlocked){
+    if(!isLeftSideBlocked && !isWallLeft){
         heroImg.style.transform = 'scale(1,1)';
         rightPosition += 1;
         imgBlockPosition -= 1;
@@ -133,6 +177,7 @@ const leftHandler = () => {
         }
         updatePositions();
         moveWorldRight();
+        checkLeftWallCollide();
     }
 };
 
@@ -163,6 +208,8 @@ const hitHandler = () => {
     heroImg.style.top = '-288px';
 };
 const jumpHandler = () => {
+    isWallRight = false;
+    isWallLeft = false;
     switch (direction) {
         case "right": {
             heroImg.style.transform = 'scale(-1,1)';
@@ -170,8 +217,8 @@ const jumpHandler = () => {
                 rightPosition = 1;
                 jump=false;
                 imgBlock.style.bottom = `${parseInt(imgBlock.style.bottom)+160}px`;
-                imgBlockPosition += 10;
-                imgBlock.style.left = `${imgBlockPosition * 20}px`;
+                imgBlockPosition += 20;
+                imgBlock.style.left = `${imgBlockPosition * heroStep}px`;
             }
             break;
         }
@@ -181,8 +228,8 @@ const jumpHandler = () => {
                 rightPosition = 0;
                 jump=false
                 imgBlock.style.bottom = `${parseInt(imgBlock.style.bottom)+160}px`;
-                imgBlockPosition -= 10;
-                imgBlock.style.left = `${imgBlockPosition * 20}px`;
+                imgBlockPosition -= 20;
+                imgBlock.style.left = `${imgBlockPosition * heroStep}px`;
             }
             break;
         }
@@ -259,7 +306,7 @@ const createTiles = (x,y=1) => {
     tile.style.position = 'absolute';
     tile.style.left = `${x*32}px`;
     tile.style.bottom = `${y*32}px`;
-    canvas.appendChild(tile);
+    backgroundCanvas.appendChild(tile);
     objectsArray.push(tile);
     tileArray.push([x,y]);
 }
@@ -270,12 +317,19 @@ const createTileBlack = (x,y=0) => {
     tileBlack.style.position = 'absolute';
     tileBlack.style.left = `${x*32}px`;
     tileBlack.style.bottom = `${y*32}px`;
-    canvas.appendChild(tileBlack);
+    backgroundCanvas.appendChild(tileBlack);
     objectsArray.push(tileBlack);
 }
-const createTilesPlatform= (startX, startY, length) =>{
-    for (let i=0; i<length;i++){
-        createTiles(startX+i,startY)
+const createTilesPlatform = (startX, endX, floor) => {
+    for (let x_pos = startX - 1 ; x_pos < endX; x_pos++) {
+        createTiles(x_pos, floor);
+    }
+}
+const createTilesBlackBlock = (startX, endX, floor) => {
+    for (let y_pos = 0; y_pos < floor; y_pos++){
+        for (let x_pos = startX - 1 ; x_pos < endX; x_pos++) {
+            createTileBlack(x_pos, y_pos);
+        }
     }
 }
 const  addTiles = (i) =>{
@@ -574,6 +628,97 @@ const updateHearts = () => {
     }
 }
 
+const createBackImg = (i) => {
+    let img = document.createElement('img');
+    img.src = 'images/background/1.webp';
+    img.style.position = 'absolute';
+    img.style.left = `${(i*window.screen.width)-32}px`;
+    img.style.bottom = '32px';
+    img.style.width = `${window.screen.width}px`;
+    backgroundCanvas.appendChild(img);
+    objectsArray.push(img);
+}
+const addBackgroundImages = () => {
+    for(let i = 0; i < 3; i++){
+        createBackImg(i);
+    }
+}
+const createImgEl = (src, x, y) => {
+    let img = window.document.createElement('img');
+    img.src = src;
+    img.style.position = 'absolute';
+    img.style.left = `${x*32}px`;
+    img.style.bottom = `${y*32}px`;
+    img.style.transform = 'scale(2,2) translate(-25%, -25%)';
+    backgroundCanvas.appendChild(img);
+    objectsArray.push(img);
+}
+const addDecorationElements = (f1, f2, f3) => {
+    let basePath = 'images/Objects/';
+    //Tree
+    createImgEl(basePath + '/Other/Tree4.png', 4, f1);
+    createImgEl(basePath + 'Other/Tree2.png', 35, f1);
+    createImgEl(basePath + '/Other/Tree3.png', 78, f1);
+    createImgEl(basePath + 'Other/Tree4.png', 108, f1);
+    createImgEl(basePath + '/Other/Tree1.png', 58, f3);
+    //Stone
+    createImgEl(basePath + '/Stones/6.png', 10, f1);
+    createImgEl(basePath + '/Stones/4.png', 111, f1);
+    createImgEl(basePath + '/Stones/4.png', 38, f1);
+    createImgEl(basePath + '/Stones/6.png', 102, f3);
+    //Ramp
+    createImgEl(basePath + '/Other/Ramp1.png', 22, f2);
+    createImgEl(basePath + '/Other/Ramp2.png', 26, f2);
+    createImgEl(basePath + '/Other/Ramp1.png', 95, f2);
+    createImgEl(basePath + '/Other/Ramp2.png', 99, f2);
+    createImgEl(basePath + '/Other/Ramp1.png', 45, f2);
+    createImgEl(basePath + '/Other/Ramp2.png', 49, f2);
+    //Bushes
+    // createImgEl(basePath + '/Bushes/17.png', 84, f1);
+    // createImgEl(basePath + '/Bushes/17.png', 19, f2);
+    // createImgEl(basePath + '/Bushes/17.png', 50, f2);
+    // createImgEl(basePath + '/Bushes/17.png', 69, f2);
+    // createImgEl(basePath + '/Bushes/17.png', 100, f2);
+    // createImgEl(basePath + '/Bushes/17.png', 13, f3);
+    //Fountain
+    createImgEl(basePath + '/Fountain/2.png', 116, f1);
+    //Box
+    createImgEl(basePath + '/Other/Box.png', 84, f1);
+    createImgEl(basePath + '/Other/Box.png', 50, f1);
+    createImgEl(basePath + '/Other/Box.png', 14, f3);
+    createImgEl(basePath + '/Other/Box.png', 64, f2);
+}
+const buildLevel = () => {
+    let floor1 = 0;
+    let floor2 = 4;
+    let floor3 = 9;
+
+    addDecorationElements(floor1 + 1, floor2 + 1, floor3 + 1);
+
+    createTilesPlatform(0, 14, floor1);
+    createTilesPlatform(33, 41, floor1);
+    createTilesPlatform(76, 91, floor1);
+    createTilesPlatform(106, 170, floor1);
+
+    createTilesPlatform(15, 32, floor2);
+    createTilesPlatform(42, 53, floor2);
+    createTilesPlatform(64, 75, floor2);
+    createTilesPlatform(92, 105, floor2);
+
+    createTilesPlatform(8, 20, floor3);
+    createTilesPlatform(54, 63, floor3);
+    createTilesPlatform(75, 87, floor3);
+    createTilesPlatform(99, 111, floor3);
+
+    createTilesBlackBlock(15, 32, floor2);
+    createTilesBlackBlock(15, 32, floor2);
+    createTilesBlackBlock(42, 53, floor2);
+    createTilesBlackBlock(64, 75, floor2);
+    createTilesBlackBlock(92, 105, floor2);
+
+    createTilesBlackBlock(54, 63, floor3);
+}
+
 // Handlers -------------------------------------------------------------------------------
 
 window.addEventListener('keydown', (event) => {
@@ -616,18 +761,19 @@ window.addEventListener('keyup', () => {
 
 // Начать анимацию
 const start = () => {
-    for (let i=0; i<50;i++) {
-        if (i>10 && i<15){
-            continue;
-        }
-        addTiles(i);
-    }
-    createTilesPlatform(11,5,5);
+    // for (let i=0; i<50;i++) {
+    //     if (i>10 && i<15){
+    //         continue;
+    //     }
+    //     addTiles(i);
+    // }
+    // createTilesPlatform(11,5,5);
 
-    let enemy = new Enemy(20,2);
+    // let enemy = new Enemy(20,2);
     addHearts();
     updateHearts();
-
+    addBackgroundImages();
+    buildLevel();
     lifeCycle();
 }
 
