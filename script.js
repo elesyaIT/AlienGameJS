@@ -338,6 +338,75 @@ const  addTiles = (i) =>{
 
 }
 
+// Cutscene-----------------------------------------------------------
+class Cutscene {
+    text;
+    block;
+    p;
+    nextButton;
+    skipButton;
+    constructor(text) {
+        this.text = text;
+        this.block = document.createElement('div');
+        this.block.style.position = 'absolute';
+        this.block.style.left = '10%';
+        this.block.style.bottom = '10vh';
+        this.block.style.width = '80%';
+        this.block.style.height = '80vh';
+        this.block.style.backgroundColor = '#38002c';
+        this.block.style.border = '5px solid #8babbf';
+        this.appendP();
+        this.appendNextButton();
+        this.appendSkipButton();
+        this.setText(this.text);
+        canvas.appendChild(this.block)
+    }
+    appendP(){
+        this.p = document.createElement('p');
+        this.p.style.position= 'absolute';
+        this.p.style.left = '10%';
+        this.p.style.top = '4vvh';
+        this.p.style.width = '80%';
+        this.p.style.color = '#8babbf';
+        this.p.style.fontSize = '8pt';
+        this.p.style.lineHeight = '1.5pt';
+        this.p.style.fontFamily = "'Press Start 2P', system-ui";
+        this.block.appendChild(this.p);
+    }
+    appendNextButton(){
+        this.nextButton = document.createElement('button');
+        this.setButtonStyle(this.nextButton, 'Next');
+        this.nextButton.style.right = '0px';
+        this.nextButton.onclick = () => {
+            this.setText('Next');
+        }
+        this.block.appendChild(this.nextButton);
+
+    }
+    appendSkipButton(){
+        this.skipButton = document.createElement('button');
+        this.setButtonStyle(this.skipButton, 'Skip');
+        this.skipButton.style.left = '0px';
+        this.skipButton.onclick = () => {
+            this.setText('Skip');
+        }
+        this.block.appendChild(this.skipButton);
+    }
+    setButtonStyle(button, title){
+        button.style.position = 'absolute';
+        button.style.bottom = '0px';
+        button.style.backgroundColor = '#8babbf';
+        button.style.color = '#38002c';
+        button.innerText = title;
+        button.style.margin = '20pt';
+        button.style.padding = '10pt';
+        button.style.border = 'none';
+        button.style.fontFamily = "'Press Start 2P', system-ui";
+    }
+    setText(text){
+        this.p.innerText = text;
+    }
+}
 //ВРАГИ------------------------------------------------------------------------------------
 class Enemy {
     ATTACK = 'attack';
@@ -644,7 +713,176 @@ class Enemy3 extends Enemy {
         this.img.style.height = '98px';
     }
 }
-
+// class Enemy4 extends Enemy {
+//     bullet;
+//     isShoot;
+//     bulletX;
+//     constructor(x,y) {
+//         super(x,y, 'images/enemies/4/');
+//         this.bullet = document.createElement('img');
+//         this.bullet.src = this.sourcePath + 'Ball1.png';
+//         this.bullet.style.position = 'absolute';
+//         this.bullet.style.left = this.block.style.left;
+//         this.bullet.style.bottom = `${Number.parseInt(this.block.style.bottom)+32}px`;
+//         this.bullet.style.transform = 'scale(2,2)';
+//         this.bullet.style.display = 'none';
+//         canvas.appendChild(this.bullet);
+//     }
+//
+//     setWalk(){
+//         this.img.src = this.sourcePath+'3-walk.png';
+//         this.img.style.top = `0px`;
+//         this.img.style.height = '98px';
+//     }
+//     setAttack(){
+//         this.img.src = this.sourcePath+'4-attack.png';
+//         this.img.style.top = `0px`;
+//         this.img.style.height = '98px';
+//     }
+//     setHurt(){
+//         this.img.src = this.sourcePath+'4-hurt.png';
+//         this.img.style.top = `0px`;
+//         this.img.style.height = '98px';
+//     }
+//     setDeath(){
+//         this.img.src = this.sourcePath+'4-death.png';
+//         this.img.style.top = `0px`;
+//         this.img.style.height = '98px';
+//     }
+//
+//     checkCollide(){
+//         if(heroY===this.posY) {
+//             this.stop=true;
+//             if(heroX > this.posX){
+//                 this.dir = 1;
+//                 this.img.style.transform = 'scale(1,1)';
+//             } else {
+//                 this.dir = -1;
+//                 this.img.style.transform = 'scale(-1,1)';
+//             }
+//             if(heroX === this.posX){
+//                 // left
+//                 this.checkHurt();
+//                 isRightSideBlocked=true;
+//                 // this.stop=true;
+//             } else if(heroX === (this.posX+3)){
+//                 //right
+//                 this.checkHurt();
+//                 isLeftSideBlocked=true;
+//                 // this.stop=true;
+//             }else {
+//                 isRightSideBlocked = false;
+//                 isLeftSideBlocked = false;
+//                 // this.stop = false;
+//                 this.changeAnimate(this.WALK);
+//             }
+//         } else {
+//             isRightSideBlocked = false;
+//             isLeftSideBlocked = false;
+//             this.stop=false;
+//             this.changeAnimate(this.WALK);
+//         }
+//     }
+//     animate(){
+//         const currentTime = new Date().getTime();
+//         if (currentTime - this.lastTime > this.delay){
+//
+//             if(this.animateWasChanged){
+//                 this.animateWasChanged=false;
+//                 switch (this.state){
+//                     case this.ATTACK:{
+//                         this.setAttack();
+//                         break;
+//                     }
+//                     case this.DEATH:{
+//                         this.setDeath()
+//                         break;
+//                     }
+//                     case this.HURT:{
+//                         this.setHurt();
+//                         break;
+//                     }
+//                     // case this.IDLE:{
+//                     //     this.setIdle();
+//                     //     break;
+//                     // }
+//                     case this.WALK:{
+//                         this.setWalk();
+//                         break;
+//                     }
+//                     default: break;
+//                 }
+//             }
+//
+//             this.spritePos++;
+//             if(this.spritePos>this.spriteMaxPos){
+//                 this.spritePos=0;
+//                 if (this.state===this.ATTACK){
+//                     if(!this.isShoot) this.shoot();
+//                 }
+//                 if(this.state === this.HURT){
+//                     this.changeAnimate(this.ATTACK);
+//                 }
+//                 if(this.state === this.DEATH){
+//                     isRightSideBlocked=false;
+//                     isLeftSideBlocked=false;
+//                     return;
+//                 }
+//             }
+//             if(this.isShoot && this.state === this.ATTACK){
+//                 this.bulletFunc();
+//             }else {
+//                 this.img.style.display = 'none';
+//             }
+//             // this.img.style.left = `${-(this.spritePos*this.blockSize)}px`;
+//
+//             // if (currentTime - this.lastMoveTime > this.delayMove) {
+//             //     console.log()
+//             //     this.move();
+//             //     this.lastMoveTime = currentTime;
+//             // }
+//             this.checkCollide();
+//             if(!this.stop){
+//                 this.move();
+//             }else {
+//                 if(this.state !== this.DEATH){
+//                     if(this.state !== this.HURT){
+//                         this.changeAnimate(this.ATTACK);
+//                     }
+//                 }
+//             }
+//             this.lastTime = currentTime;
+//         }
+//
+//         requestAnimationFrame(()=> this.animate());
+//     }
+//     shoot(){
+//         this.isShoot = true;
+//         this.bullet.style.display = 'block';
+//         (this.dir>0) ? this.bulletX=this.posX+2 : this.bullet = this.posX+1;
+//     }
+//     bulletFunc(){
+//         (this.dir>0) ? this.bulletX+=1 : this.bullet -=1;
+//         this.bullet.style.left = `${this.bulletX * 32}px`;
+//         if(this.bulletX === heroX && this.posY === heroY){
+//             this.isShoot = false;
+//             this.bullet.style.display = 'none';
+//             lives--;
+//             updateHearts();
+//         }
+//         if(this.dir>0){
+//             if(this.bulletX > (this.posX + 6)){
+//                 this.isShoot = false;
+//                 this.bullet.style.display = 'none';
+//             }
+//         } else {
+//             if(this.bulletX < (this.posX - 5)){
+//                 this.isShoot = false;
+//                 this.bullet.style.display = 'none';
+//             }
+//         }
+//     }
+// }
 //Сердце----------------------------------------------------------------------------------
 class Heart {
     img;
@@ -757,7 +995,8 @@ const addDecorationElements = (f1, f2, f3,f4) => {
 const addEnemies = () => {
     let ememy1 = new Enemy1(5,10);
     let ememy2 = new Enemy2(14,5);
-    let ememy3 = new Enemy3(40,5);
+    let ememy3 = new Enemy3(52,10);
+    // let ememy4 = new Enemy4(40,5);
 };
 const buildLevel = () => {
     let floor1 = 0;
@@ -848,6 +1087,7 @@ const start = () => {
     updateHearts();
     addBackgroundImages();
     buildLevel();
+    let cutscene = new Cutscene('Hello world');
     lifeCycle();
 }
 
