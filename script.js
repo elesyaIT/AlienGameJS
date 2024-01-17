@@ -366,9 +366,9 @@ class Enemy {
     lives
 
     sourcePath;
-    constructor(x,y) {
-        this.posX=x;
-        this.startX= this.posX;
+    constructor(x,y, src) {
+        this.posX=x + this.getRandomOffset(6);
+        this.startX= x;
         this.posY=y;
         this.blockSize=96;
         this.spritePos=0;
@@ -376,7 +376,7 @@ class Enemy {
         this.lastTime = 0;
         this.lastMoveTime =0;
         this.delay=100;
-        this.sourcePath = 'images/enemies/';
+        this.sourcePath = src;
         this.dir = 1;
         this.delayMove = 110;
         this.stop = false;
@@ -503,7 +503,7 @@ class Enemy {
         this.animateWasChanged = true;
     }
     move(){
-        if(this.posX>(this.startX+15)){
+        if(this.posX>(this.startX+10)){
             this.dir *=-1;
             this.img.style.transform = "scale(1,1)";
         } else if(this.posX<=this.startX){
@@ -572,10 +572,76 @@ class Enemy {
     moveRight(){
         this.startX += 1;
         this.posX += 1;
+        if(this.stop || this.state === this.DEATH){
+            this.block.style.left = `${Number.parseInt(this.block.style.left)+ 32}px`;
+        }
     }
     moveLeft(){
         this.startX -= 1;
         this.posX -= 1;
+        if(this.stop || this.state === this.DEATH){
+            this.block.style.left = `${Number.parseInt(this.block.style.left) - 32}px`;
+        }
+    }
+    getRandomOffset(max){
+        let rand = Math.floor((Math.random()*max));
+        return rand;
+    }
+}
+
+class Enemy1 extends Enemy {
+    constructor(x,y) {
+        super(x,y, 'images/enemies/1/');
+    }
+}
+class Enemy2 extends Enemy {
+    constructor(x,y) {
+        super(x,y, 'images/enemies/2/');
+    }
+    setWalk(){
+        this.img.src = this.sourcePath+'enemi-walk.png';
+        this.img.style.top = `0px`;
+        this.img.style.height = '98px';
+    }
+    setAttack(){
+        this.img.src = this.sourcePath+'enemi-attack.png';
+        this.img.style.top = `0px`;
+        this.img.style.height = '98px';
+    }
+    setHurt(){
+        this.img.src = this.sourcePath+'enemi-hurt.png';
+        this.img.style.top = `0px`;
+        this.img.style.height = '98px';
+    }
+    setDeath(){
+        this.img.src = this.sourcePath+'enemi-death.png';
+        this.img.style.top = `0px`;
+        this.img.style.height = '98px';
+    }
+}
+class Enemy3 extends Enemy {
+    constructor(x,y) {
+        super(x,y, 'images/enemies/3/');
+    }
+    setWalk(){
+        this.img.src = this.sourcePath+'3-walk.png';
+        this.img.style.top = `0px`;
+        this.img.style.height = '98px';
+    }
+    setAttack(){
+        this.img.src = this.sourcePath+'4-attack.png';
+        this.img.style.top = `0px`;
+        this.img.style.height = '98px';
+    }
+    setHurt(){
+        this.img.src = this.sourcePath+'4-hurt.png';
+        this.img.style.top = `0px`;
+        this.img.style.height = '98px';
+    }
+    setDeath(){
+        this.img.src = this.sourcePath+'4-death.png';
+        this.img.style.top = `0px`;
+        this.img.style.height = '98px';
     }
 }
 
@@ -653,7 +719,7 @@ const createImgEl = (src, x, y) => {
     backgroundCanvas.appendChild(img);
     objectsArray.push(img);
 }
-const addDecorationElements = (f1, f2, f3) => {
+const addDecorationElements = (f1, f2, f3,f4) => {
     let basePath = 'images/Objects/';
     //Tree
     createImgEl(basePath + '/Other/Tree4.png', 4, f1);
@@ -667,12 +733,12 @@ const addDecorationElements = (f1, f2, f3) => {
     createImgEl(basePath + '/Stones/4.png', 38, f1);
     createImgEl(basePath + '/Stones/6.png', 102, f3);
     //Ramp
-    createImgEl(basePath + '/Other/Ramp1.png', 22, f2);
-    createImgEl(basePath + '/Other/Ramp2.png', 26, f2);
-    createImgEl(basePath + '/Other/Ramp1.png', 95, f2);
-    createImgEl(basePath + '/Other/Ramp2.png', 99, f2);
-    createImgEl(basePath + '/Other/Ramp1.png', 45, f2);
-    createImgEl(basePath + '/Other/Ramp2.png', 49, f2);
+    createImgEl(basePath + '/Other/Ramp1.png', 22, f4);
+    createImgEl(basePath + '/Other/Ramp2.png', 26, f3);
+    createImgEl(basePath + '/Other/Ramp1.png', 95, f3);
+    createImgEl(basePath + '/Other/Ramp2.png', 99, f4);
+    createImgEl(basePath + '/Other/Ramp1.png', 45, f3);
+    createImgEl(basePath + '/Other/Ramp2.png', 49, f3);
     //Bushes
     // createImgEl(basePath + '/Bushes/17.png', 84, f1);
     // createImgEl(basePath + '/Bushes/17.png', 19, f2);
@@ -688,12 +754,18 @@ const addDecorationElements = (f1, f2, f3) => {
     createImgEl(basePath + '/Other/Box.png', 14, f3);
     createImgEl(basePath + '/Other/Box.png', 64, f2);
 }
+const addEnemies = () => {
+    let ememy1 = new Enemy1(5,10);
+    let ememy2 = new Enemy2(14,5);
+    let ememy3 = new Enemy3(40,5);
+};
 const buildLevel = () => {
     let floor1 = 0;
     let floor2 = 4;
     let floor3 = 9;
+    let floor4 = 12;
 
-    addDecorationElements(floor1 + 1, floor2 + 1, floor3 + 1);
+    addDecorationElements(floor1 + 1, floor2 + 1, floor3 + 1,floor4+1);
 
     createTilesPlatform(0, 14, floor1);
     createTilesPlatform(33, 41, floor1);
@@ -705,7 +777,7 @@ const buildLevel = () => {
     createTilesPlatform(64, 75, floor2);
     createTilesPlatform(92, 105, floor2);
 
-    createTilesPlatform(8, 20, floor3);
+    createTilesPlatform(8, 23, floor3);
     createTilesPlatform(54, 63, floor3);
     createTilesPlatform(75, 87, floor3);
     createTilesPlatform(99, 111, floor3);
@@ -717,6 +789,8 @@ const buildLevel = () => {
     createTilesBlackBlock(92, 105, floor2);
 
     createTilesBlackBlock(54, 63, floor3);
+
+    addEnemies();
 }
 
 // Handlers -------------------------------------------------------------------------------
