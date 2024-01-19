@@ -11,8 +11,9 @@ let lastTime = 0;
 const delay = 100; // Задержка в миллисекундах
 
 let canvas = document.querySelector("#canvas");
-let backgroundCanvas = window.document.querySelector('#background-canvas');
+let backgroundCanvas = document.querySelector('#background-canvas');
 let fsBtn = document.querySelector("#fsBtn");
+let restartBtn = document.querySelector('#restartBtn');
 
 let direction = 'right';
 let hit = false;
@@ -27,20 +28,22 @@ let tileArray = [];
 let objectsArray = [];
 let enemiesArray = [];
 
-let maxLives = 6;
-let lives = 6;
+let maxLives = 7;
+let lives = 7;
 let heartsArray = [];
 
 let isRightSideBlocked = false;
 let isLeftSideBlocked = false;
 let wasHeroHit = false;
 
-let f1WallArray = [[-10,0],[15, 32], [42, 52], [64, 75], [92, 104],[119,129]];
+let f1WallArray = [[-10,0],[15, 32], [42, 52], [60, 77], [92, 107],[119,129]];
 let f2WallArray = [[54, 64]];
 let isWallRight = false;
 let isWallLeft = false;
 
 let heroStep = 3;
+
+let finalTimerText = document.querySelector('#final-timer-text');
 
 // Function
 
@@ -82,6 +85,10 @@ const updateHeroXY=()=>{
     heroX = Math.round((Number.parseInt(imgBlock.style.left)+32)/32);
     heroY = Math.round(Number.parseInt(imgBlock.style.bottom)/32);
     info.innerText= `heroX= ${heroX};heroY= ${heroY}`;
+    if(heroY<=0) {
+        lives=0;
+        updateHearts();
+    }
 }
 
 const checkFalling = () => {
@@ -98,9 +105,9 @@ const checkFalling = () => {
 }
 
 const fallHandler = () => {
+    heroImg.style.top = '-96px';
     imgBlock.style.bottom = `${parseInt(imgBlock.style.bottom)-40}px`;
     checkFalling();
-    // fall=false;
 }
 // перемещение блока
 const updatePositions = () => {
@@ -150,21 +157,26 @@ const checkLeftWallCollide = () => {
 
 // на право
 const rightHandler = () => {
-    if(!isRightSideBlocked && !isWallRight){
-        heroImg.style.transform = 'scale(-1,1)';
-        rightPosition += 1;
-        imgBlockPosition += 1;
-        if (rightPosition > 5) {
-            rightPosition = -1;
+    if(!fall) {
+        if (!isRightSideBlocked && !isWallRight) {
+            heroImg.style.transform = 'scale(-1,1)';
+            rightPosition += 1;
+            imgBlockPosition += 1;
+            if (rightPosition > 5) {
+                rightPosition = -1;
+            }
+            updatePositions();
+            moveWorldLeft();
+            checkRightWallCollide();
         }
-        updatePositions();
-        moveWorldLeft();
-        checkRightWallCollide();
+    }else {
+        fallHandler();
     }
 };
 
 // на лево
 const leftHandler = () => {
+    if(!fall){
     if(!isLeftSideBlocked && !isWallLeft){
         heroImg.style.transform = 'scale(1,1)';
         rightPosition += 1;
@@ -178,6 +190,9 @@ const leftHandler = () => {
         updatePositions();
         moveWorldRight();
         checkLeftWallCollide();
+    }
+    }else {
+        fallHandler();
     }
 };
 
@@ -274,7 +289,9 @@ fsBtn.onclick = () => {
         canvas.requestFullscreen();
     }
 };
-
+restartBtn.addEventListener('click', ()=>{
+    document.location.reload();
+});
 
 const lifeCycle = (timestamp) => {
 
@@ -338,6 +355,77 @@ const  addTiles = (i) =>{
 
 }
 
+//Teleport
+class Lever {
+    leverImg;
+    x;
+    y;
+    updateTimer;
+    finalTimer;
+    time;
+    dir;
+    opacity;
+    fountainImg;
+    constructor() {
+        this.fountainImg = objectsArray.filter(elem => elem.outerHTML.split('"')[1] === 'images/Objects/Fountain/2.png')[0];
+        this.x = heroX + 2;
+        this.y = heroY;
+        this.leverImg = document.createElement('img');
+        this.leverImg.src = 'images/exit/lever.png';
+        this.leverImg.style.position = 'absolute';
+        this.leverImg.style.left = `${this.x * 32}px`;
+        this.leverImg.style.bottom = `${this.y * 32}px`;
+        this.leverImg.style.width = `64px`;
+        this.leverImg.style.height = `64px`;
+        canvas.appendChild(this.leverImg);
+        enemiesArray.push(this);
+
+        this.time = 30;
+        this.dir = true;
+        this.opacity = 1;
+        this.updateTimer = setInterval(()=>{
+            if(heroX === this.x + 1 && heroY === this.y){
+                this.leverImg.style.display = 'none';
+                clearInterval(this.updateTimer);
+                new Cutscene(['Quickly run to the teleporter!']);
+            }else{
+                this.animate();
+            }
+        }, 100);
+        this.finalTimer = setInterval(()=>{
+            if(this.time <= 0){
+                finalTimerText.innerText = 'Game over';
+                imgBlock.style.display = 'none';
+                lives=0;
+                updateHearts();
+                clearInterval(this.finalTimer);
+            }else{
+                finalTimerText.innerText = `${this.time}`;
+                this.time--;
+                if(heroX === Number.parseInt(this.fountainImg.style.left)/32){
+                    new Terminal();
+                    clearInterval(this.finalTimer);
+                    // finalTimerText.innerText = 'Win';
+                }
+            }
+        }, 1000);
+    }
+    animate(){
+        (this.dir) ? this.opacity += 0.5 : this.opacity -= 0.5;
+        this.leverImg.style.opacity = `${1/this.opacity}`;
+        if(this.opacity <= 0 || this.opacity >= 5) this.dir = !this.dir;
+    }
+
+    moveLeft(){
+        this.leverImg.style.left = `${Number.parseInt(this.leverImg.style.left) - 32}px`;
+        this.x -= 1;
+    }
+    moveRight(){
+        this.leverImg.style.left = `${Number.parseInt(this.leverImg.style.left) + 32}px`;
+        this.x += 1;
+    }
+}
+
 // Cutscene-----------------------------------------------------------
 class Cutscene {
     text;
@@ -345,7 +433,9 @@ class Cutscene {
     p;
     nextButton;
     skipButton;
+    page;
     constructor(text) {
+        this.page = 0;
         this.text = text;
         this.block = document.createElement('div');
         this.block.style.position = 'absolute';
@@ -358,7 +448,7 @@ class Cutscene {
         this.appendP();
         this.appendNextButton();
         this.appendSkipButton();
-        this.setText(this.text);
+        this.setText(this.text[this.page]);
         canvas.appendChild(this.block)
     }
     appendP(){
@@ -368,17 +458,30 @@ class Cutscene {
         this.p.style.top = '4vvh';
         this.p.style.width = '80%';
         this.p.style.color = '#8babbf';
-        this.p.style.fontSize = '8pt';
-        this.p.style.lineHeight = '1.5pt';
+        this.p.style.fontSize = '15pt';
+        this.p.style.lineHeight = '20pt';
         this.p.style.fontFamily = "'Press Start 2P', system-ui";
+        this.p.onclick = () => {
+            this.nextButton.style.display = 'block';
+            clearInterval(this.timer);
+            this.p.innerText = this.text[this.page];
+        }
         this.block.appendChild(this.p);
     }
     appendNextButton(){
         this.nextButton = document.createElement('button');
         this.setButtonStyle(this.nextButton, 'Next');
         this.nextButton.style.right = '0px';
+        this.nextButton.style.display = 'none';
         this.nextButton.onclick = () => {
-            this.setText('Next');
+            if( this.page < this.text.length - 1){
+                this.page++;
+                this.setText(this.text[this.page]);
+                this.nextButton.style.display = 'none';
+            }else {
+                this.block.style.display = 'none';
+            }
+
         }
         this.block.appendChild(this.nextButton);
 
@@ -388,7 +491,7 @@ class Cutscene {
         this.setButtonStyle(this.skipButton, 'Skip');
         this.skipButton.style.left = '0px';
         this.skipButton.onclick = () => {
-            this.setText('Skip');
+            this.block.style.display = 'none';
         }
         this.block.appendChild(this.skipButton);
     }
@@ -404,7 +507,91 @@ class Cutscene {
         button.style.fontFamily = "'Press Start 2P', system-ui";
     }
     setText(text){
-        this.p.innerText = text;
+        if(this.page === this.text.length - 1) this.nextButton.innerText = 'Go';
+        let innerText = '';
+        let targetText = text;
+        let pos = 0;
+        this.timer = setInterval(()=>{
+            if(pos <= targetText.length - 1){
+                innerText += targetText[pos];
+                this.p.innerText = innerText;
+                pos++;
+            }else{
+                clearInterval(this.timer);
+                this.nextButton.style.display = 'block';
+            }
+        },20);
+    }
+}
+class Terminal extends Cutscene {
+    btnBlock;
+    mainStrLength;
+    password;
+    constructor(){
+        let text = 'Please enter your password :';
+        super([text]);
+        this.password = '3157';
+        this.mainStrLength = text.length;
+        this.btnBlock = window.document.createElement('div');
+        this.btnBlock.style.position = 'absolute';
+        this.btnBlock.style.left = '33%';
+        this.btnBlock.style.bottom = '10vh';
+        this.btnBlock.style.width = '33%';
+        this.block.appendChild(this.btnBlock);
+        this.skipButton.innerText = 'Clear';
+        this.nextButton.innerText = 'Enter';
+        this.createNumButtons();
+        this.skipButton.onclick = () => {
+            if(this.p.innerText.length > this.mainStrLength){
+                let str = '';
+                for(let i = 0; i < this.p.innerText.length - 1; i++){
+                    str += this.p.innerText[i];
+                }
+                this.p.innerText = str;
+            }
+        }
+        this.nextButton.onclick = () => {
+            if(this.p.innerText.length === this.mainStrLength + 4){
+                let str = '';
+                for(let i = this.p.innerText.length - 4; i < this.p.innerText.length; i++){
+                    str += this.p.innerText[i];
+                }
+                if(str === this.password){
+                    this.block.style.display = 'none';
+                    finalTimerText.innerText = 'You win!';
+                    imgBlock.style.display = 'none';
+                }else{
+                    this.p.innerText = 'The password is incorrect, try again:';
+                    this.mainStrLength = this.p.innerText.length;
+                }
+            }
+        }
+    }
+    createNumButtons(){
+        for(let i = 1; i <= 9; i++){
+            let btn = window.document.createElement('button');
+            this.setButtonStyle(btn, `${i}`);
+            btn.style.left =
+                (i <= 3)
+                    ? `${(i - 1)*33}%`
+                    : (i <= 6)
+                        ? `${(i - 4)*33}%`
+                        : `${(i - 7)*33}%`
+            ;
+            btn.style.bottom =
+                (i <= 3)
+                    ? '36vh'
+                    : (i <= 6)
+                        ? '18vh'
+                        : 0
+            ;
+            btn.onclick = (event) => {
+                if(this.p.innerText.length < this.mainStrLength + 4){
+                    this.p.innerText += event.target.innerText;
+                }
+            }
+            this.btnBlock.appendChild(btn);
+        }
     }
 }
 //ВРАГИ------------------------------------------------------------------------------------
@@ -432,10 +619,14 @@ class Enemy {
     dir;
     delayMove;
     stop;
-    lives
+    lives;
+    message;
+    isLast
 
     sourcePath;
-    constructor(x,y, src) {
+    constructor(x,y, src, message = '', isLast =  false) {
+        this.isLast = isLast;
+        this.message = message;
         this.posX=x + this.getRandomOffset(6);
         this.startX= x;
         this.posY=y;
@@ -500,10 +691,7 @@ class Enemy {
                         this.setHurt();
                         break;
                     }
-                    // case this.IDLE:{
-                    //     this.setIdle();
-                    //     break;
-                    // }
+
                     case this.WALK:{
                         this.setWalk();
                         break;
@@ -525,16 +713,16 @@ class Enemy {
                 if(this.state === this.DEATH){
                     isRightSideBlocked=false;
                     isLeftSideBlocked=false;
+                    if (this.message) {
+                        new Cutscene([this.message]);
+                        if(this.isLast) {
+                            new Lever();
+                        }
+                    }
                     return;
                 }
             }
             this.img.style.left = `${-(this.spritePos*this.blockSize)}px`;
-
-            // if (currentTime - this.lastMoveTime > this.delayMove) {
-            //     console.log()
-            //     this.move();
-            //     this.lastMoveTime = currentTime;
-            // }
             this.checkCollide();
             if(!this.stop){
                 this.move();
@@ -659,13 +847,13 @@ class Enemy {
 }
 
 class Enemy1 extends Enemy {
-    constructor(x,y) {
-        super(x,y, 'images/enemies/1/');
+    constructor(x,y,mess) {
+        super(x,y, 'images/enemies/1/', mess);
     }
 }
 class Enemy2 extends Enemy {
-    constructor(x,y) {
-        super(x,y, 'images/enemies/2/');
+    constructor(x,y,mess) {
+        super(x,y, 'images/enemies/2/',mess);
     }
     setWalk(){
         this.img.src = this.sourcePath+'enemi-walk.png';
@@ -689,8 +877,8 @@ class Enemy2 extends Enemy {
     }
 }
 class Enemy3 extends Enemy {
-    constructor(x,y) {
-        super(x,y, 'images/enemies/3/');
+    constructor(x,y,mess, isLast) {
+        super(x,y, 'images/enemies/3/',mess, isLast);
     }
     setWalk(){
         this.img.src = this.sourcePath+'3-walk.png';
@@ -713,176 +901,33 @@ class Enemy3 extends Enemy {
         this.img.style.height = '98px';
     }
 }
-// class Enemy4 extends Enemy {
-//     bullet;
-//     isShoot;
-//     bulletX;
-//     constructor(x,y) {
-//         super(x,y, 'images/enemies/4/');
-//         this.bullet = document.createElement('img');
-//         this.bullet.src = this.sourcePath + 'Ball1.png';
-//         this.bullet.style.position = 'absolute';
-//         this.bullet.style.left = this.block.style.left;
-//         this.bullet.style.bottom = `${Number.parseInt(this.block.style.bottom)+32}px`;
-//         this.bullet.style.transform = 'scale(2,2)';
-//         this.bullet.style.display = 'none';
-//         canvas.appendChild(this.bullet);
-//     }
-//
-//     setWalk(){
-//         this.img.src = this.sourcePath+'3-walk.png';
-//         this.img.style.top = `0px`;
-//         this.img.style.height = '98px';
-//     }
-//     setAttack(){
-//         this.img.src = this.sourcePath+'4-attack.png';
-//         this.img.style.top = `0px`;
-//         this.img.style.height = '98px';
-//     }
-//     setHurt(){
-//         this.img.src = this.sourcePath+'4-hurt.png';
-//         this.img.style.top = `0px`;
-//         this.img.style.height = '98px';
-//     }
-//     setDeath(){
-//         this.img.src = this.sourcePath+'4-death.png';
-//         this.img.style.top = `0px`;
-//         this.img.style.height = '98px';
-//     }
-//
-//     checkCollide(){
-//         if(heroY===this.posY) {
-//             this.stop=true;
-//             if(heroX > this.posX){
-//                 this.dir = 1;
-//                 this.img.style.transform = 'scale(1,1)';
-//             } else {
-//                 this.dir = -1;
-//                 this.img.style.transform = 'scale(-1,1)';
-//             }
-//             if(heroX === this.posX){
-//                 // left
-//                 this.checkHurt();
-//                 isRightSideBlocked=true;
-//                 // this.stop=true;
-//             } else if(heroX === (this.posX+3)){
-//                 //right
-//                 this.checkHurt();
-//                 isLeftSideBlocked=true;
-//                 // this.stop=true;
-//             }else {
-//                 isRightSideBlocked = false;
-//                 isLeftSideBlocked = false;
-//                 // this.stop = false;
-//                 this.changeAnimate(this.WALK);
-//             }
-//         } else {
-//             isRightSideBlocked = false;
-//             isLeftSideBlocked = false;
-//             this.stop=false;
-//             this.changeAnimate(this.WALK);
-//         }
-//     }
-//     animate(){
-//         const currentTime = new Date().getTime();
-//         if (currentTime - this.lastTime > this.delay){
-//
-//             if(this.animateWasChanged){
-//                 this.animateWasChanged=false;
-//                 switch (this.state){
-//                     case this.ATTACK:{
-//                         this.setAttack();
-//                         break;
-//                     }
-//                     case this.DEATH:{
-//                         this.setDeath()
-//                         break;
-//                     }
-//                     case this.HURT:{
-//                         this.setHurt();
-//                         break;
-//                     }
-//                     // case this.IDLE:{
-//                     //     this.setIdle();
-//                     //     break;
-//                     // }
-//                     case this.WALK:{
-//                         this.setWalk();
-//                         break;
-//                     }
-//                     default: break;
-//                 }
-//             }
-//
-//             this.spritePos++;
-//             if(this.spritePos>this.spriteMaxPos){
-//                 this.spritePos=0;
-//                 if (this.state===this.ATTACK){
-//                     if(!this.isShoot) this.shoot();
-//                 }
-//                 if(this.state === this.HURT){
-//                     this.changeAnimate(this.ATTACK);
-//                 }
-//                 if(this.state === this.DEATH){
-//                     isRightSideBlocked=false;
-//                     isLeftSideBlocked=false;
-//                     return;
-//                 }
-//             }
-//             if(this.isShoot && this.state === this.ATTACK){
-//                 this.bulletFunc();
-//             }else {
-//                 this.img.style.display = 'none';
-//             }
-//             // this.img.style.left = `${-(this.spritePos*this.blockSize)}px`;
-//
-//             // if (currentTime - this.lastMoveTime > this.delayMove) {
-//             //     console.log()
-//             //     this.move();
-//             //     this.lastMoveTime = currentTime;
-//             // }
-//             this.checkCollide();
-//             if(!this.stop){
-//                 this.move();
-//             }else {
-//                 if(this.state !== this.DEATH){
-//                     if(this.state !== this.HURT){
-//                         this.changeAnimate(this.ATTACK);
-//                     }
-//                 }
-//             }
-//             this.lastTime = currentTime;
-//         }
-//
-//         requestAnimationFrame(()=> this.animate());
-//     }
-//     shoot(){
-//         this.isShoot = true;
-//         this.bullet.style.display = 'block';
-//         (this.dir>0) ? this.bulletX=this.posX+2 : this.bullet = this.posX+1;
-//     }
-//     bulletFunc(){
-//         (this.dir>0) ? this.bulletX+=1 : this.bullet -=1;
-//         this.bullet.style.left = `${this.bulletX * 32}px`;
-//         if(this.bulletX === heroX && this.posY === heroY){
-//             this.isShoot = false;
-//             this.bullet.style.display = 'none';
-//             lives--;
-//             updateHearts();
-//         }
-//         if(this.dir>0){
-//             if(this.bulletX > (this.posX + 6)){
-//                 this.isShoot = false;
-//                 this.bullet.style.display = 'none';
-//             }
-//         } else {
-//             if(this.bulletX < (this.posX - 5)){
-//                 this.isShoot = false;
-//                 this.bullet.style.display = 'none';
-//             }
-//         }
-//     }
-// }
+class Enemy5 extends Enemy {
+    constructor(x,y,mess, isLast) {
+        super(x,y, 'images/enemies/5/',mess, isLast);
+    }
+    setWalk(){
+        this.img.src = this.sourcePath+'main.png';
+        // this.img.style.width = '98px';
+        this.img.style.top = `0px`;
+        this.img.style.height = '98px';
+    }
+    setAttack(){
+        this.img.src = this.sourcePath+'mainatt.png';
+        this.img.style.top = `0px`;
+        this.img.style.height = '98px';
+    }
+    setHurt(){
+        this.img.src = this.sourcePath+'mainhut.png';
+        this.img.style.top = `0px`;
+        this.img.style.height = '98px';
+    }
+    setDeath(){
+        this.img.src = this.sourcePath+'maindeath.png';
+        this.img.style.top = `0px`;
+        this.img.style.height = '98px';
+    }
+}
+
 //Сердце----------------------------------------------------------------------------------
 class Heart {
     img;
@@ -921,8 +966,15 @@ const addHearts = () => {
     }
 }
 const updateHearts = () => {
-    if(lives<1) {
-        lives=1;
+    if(lives<=0) {
+        if (heroY<0){
+            finalTimerText.innerText = 'You fell\nGame Over';
+            imgBlock.style.display = 'none';
+        } else {
+            finalTimerText.innerText = 'Game Over';
+            imgBlock.style.display = 'none';
+        }
+
     }
     for (let i=0; i<lives;i++){
         heartsArray[i].img.style.display = 'block';
@@ -977,15 +1029,9 @@ const addDecorationElements = (f1, f2, f3,f4) => {
     createImgEl(basePath + '/Other/Ramp2.png', 99, f4);
     createImgEl(basePath + '/Other/Ramp1.png', 45, f3);
     createImgEl(basePath + '/Other/Ramp2.png', 49, f3);
-    //Bushes
-    // createImgEl(basePath + '/Bushes/17.png', 84, f1);
-    // createImgEl(basePath + '/Bushes/17.png', 19, f2);
-    // createImgEl(basePath + '/Bushes/17.png', 50, f2);
-    // createImgEl(basePath + '/Bushes/17.png', 69, f2);
-    // createImgEl(basePath + '/Bushes/17.png', 100, f2);
-    // createImgEl(basePath + '/Bushes/17.png', 13, f3);
+
     //Fountain
-    createImgEl(basePath + '/Fountain/2.png', 116, f1);
+    createImgEl(basePath + 'Fountain/2.png', 116, f1);
     //Box
     createImgEl(basePath + '/Other/Box.png', 84, f1);
     createImgEl(basePath + '/Other/Box.png', 50, f1);
@@ -993,9 +1039,16 @@ const addDecorationElements = (f1, f2, f3,f4) => {
     createImgEl(basePath + '/Other/Box.png', 64, f2);
 }
 const addEnemies = () => {
-    let ememy1 = new Enemy1(5,10);
+    let ememy1 = new Enemy1(5,10, 'First digit of the code 3');
     let ememy2 = new Enemy2(14,5);
     let ememy3 = new Enemy3(52,10);
+    let ememy4 = new Enemy1(61,5, 'last digit of the code 7.');
+    let ememy5 = new Enemy3(90,5);
+    let ememy6 = new Enemy2(75,10, 'Second digit of the code 1');
+    let ememy7 = new Enemy3(75,1, 'Third digit of the code 5.', );
+    let ememy8 = new Enemy5(98,10, 'Take the crystal.', true);
+
+
     // let ememy4 = new Enemy4(40,5);
 };
 const buildLevel = () => {
@@ -1049,10 +1102,10 @@ window.addEventListener('keydown', (event) => {
                     leftHandler();
                 } else if (event.code === 'KeyW') {
                     jump = true;
-                    console.log(jump);
+                    jumpHandler();
                 }else if (event.code === 'KeyE') {
                     hit = true;
-                    console.log(hit);
+                    hitHandler();
                 }
                 lastTime = currentTime;
             }
@@ -1070,24 +1123,48 @@ window.addEventListener('keyup', () => {
         animationFrameId = requestAnimationFrame(lifeCycle);
     }
 });
-
+const addStartScreen = () => {
+    let div = document.createElement('div');
+    div.style.position = 'absolute';
+    div.style.left = 0;
+    div.style.bottom = 0;
+    div.style.width = '100%';
+    div.style.height = '100vh';
+    div.style.backgroundColor = '#38002c';
+    div.style.display = 'grid';
+    div.style.alignItems = 'center';
+    div.style.justifyContent = 'center';
+    canvas.appendChild(div);
+    let btn = window.document.createElement('button');
+    btn.innerText = 'PLAY';
+    btn.style.fontFamily = "'Press Start 2P', cursive";
+    btn.style.fontSize = '30pt';
+    btn.style.backgroundColor = '#8babbf';
+    btn.style.color = '#38002c';
+    btn.style.padding = '20pt 30pt';
+    btn.style.border = 'none';
+    btn.addEventListener('click', () => {
+        div.style.display = 'none';
+        fsBtn.src = 'images/screen/cancel.png';
+        canvas.requestFullscreen();
+        let cutscene = new Cutscene([
+            "Adam landed on an alien planet.\n\n It turned out that escaping from this world was possible – the door was located behind one of the fountains at the end of the first level.\n\n However, to open it, he needed to find a hidden lever and enter the password code.",
+            " \n\n The password consists of 4 numbers.\n\n The digits of the password are inside carefully guarded wooden crates (one in each).\n\n As for the lever, it is hidden on the second level, which Adam doesn't have access to. \n\n Fortunately, his friends found a way to steal it.\n\n",
+            " But, since the danger is too great, they will only hand over the lever when all the digits of the password are known.\n\n When the lever appears, Adam will have 30 seconds to find it, run to the fountain, and enter the password.\n\n If the hero fails – the location of his friends will be discovered by adversaries.",
+        ]);
+    });
+    div.appendChild(btn);
+}
 
 // Начать анимацию
 const start = () => {
-    // for (let i=0; i<50;i++) {
-    //     if (i>10 && i<15){
-    //         continue;
-    //     }
-    //     addTiles(i);
-    // }
-    // createTilesPlatform(11,5,5);
-
-    // let enemy = new Enemy(20,2);
     addHearts();
     updateHearts();
     addBackgroundImages();
     buildLevel();
-    let cutscene = new Cutscene('Hello world');
+    addStartScreen();
+
+
     lifeCycle();
 }
 
